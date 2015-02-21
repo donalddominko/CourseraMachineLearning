@@ -1,0 +1,126 @@
+# Implementing machine learning algorithm with Cross-Validation
+Author  : Donald Dominko - Copyright 2015 Donald Dominko
+About   : Course Project asignement in class "http://class.coursera.org/predmachlearn-011"
+
+
+## Introduction
+This is a "rough cut" procedure for creating a "machine learning" based prediction algorithm with using cross validation which will determin the most suitable variables for predicting the outcome.
+This algorithm was not used for an actual prediction you should not treat it as a complete work in that regard i.e. **correctly** predicting 20 validation cases at the end. In reality I used "randomForest()" function for predicting and in this example I will use "train()" function from "caret" package with "rpart" method
+
+## Loding data
+Data is provided as part of an assignment and after loading it and some basic pre processing it will be used for making two data partitions that will be used for making a confusion matrix that will be used for comparison of error.
+```{r echo = FALSE, cache = TRUE}
+        pmlTraining = read.table("pml-training.csv",
+                             sep = ",", 
+                             header = T
+                             )
+
+        pmlTesting = read.table("pml-testing.csv", 
+                             sep = ",", 
+                             header = T
+                             )
+
+        ## For real
+        # First we will figure out which columns we want to keep from the test set
+        require(caret)
+        require(randomForest)
+        require(e1071)
+
+        tmp2 = NULL
+        for(i in 1:length(colnames(pmlTesting)) ){ 
+                
+                if (sum( is.na( pmlTesting[, i] ) ) == 0 ) ## Figure out if we have NA column
+                        {
+                                tmp2 = c(tmp2, colnames(pmlTesting)[i])
+                        }                 
+        }
+        # Remove what we do not need
+        tmp2 = tmp2[-c(1,3,4,5,60)]
+
+
+        # Now we clean the train set columns 
+        pmlTrainingClean = pmlTraining[, c("classe", tmp2)]
+       
+        # Remove user_name variable
+        #pmlTrainingClean = pmlTrainingClean[-2]
+
+        # Spliting training set into training and test set
+        inTrain.01 = createDataPartition(pmlTrainingClean$user_name, p=0.60, list=FALSE)
+
+        inTrain.02 = createDataPartition(pmlTrainingClean$user_name, p=0.75, list=FALSE)
+```
+  
+  
+### Spliting into training and test sets
+This part of R chunk will split the testing and training. Variable "user_name" would be a perfect predictor so it will be used for a split. After that it will be removed.
+```{r  echo = TRUE, cache = TRUE}
+        # Spliting training set into training and test set
+        inTrain.01 = createDataPartition(pmlTrainingClean$user_name, p=0.60, list=FALSE)
+        
+        # First dataset batch for training and testing
+        training.01 = pmlTrainingClean[inTrain.01,]
+        testing.01 = pmlTrainingClean[-inTrain.01,]
+
+        # Second split 
+        inTrain.02 = createDataPartition(pmlTrainingClean$user_name, p=0.75, list=FALSE)
+
+        # Second batch of training and testing dataset
+        training.02 = pmlTrainingClean[inTrain.02,]
+        testing.02 = pmlTrainingClean[-inTrain.02,]
+
+        # For housekeeping purposes and unbiased prediction we remove "user_name" variable
+        training.01 = training.01[-2] 
+        training.02 = training.02[-2]
+        testing.01 = testing.01[-2]
+        testing.02 = testing.02[-2]
+
+```
+
+### Building the models
+This part will build two models. We'll let "train()" function deal with cross-validation by passing "trControl" parameter value "trainControl(method="cv")" and "cv" part instructs that it should train model based on cross-validation.
+Also some preprocessing takes place so that data will as good as possible for a "raw cut".
+```{r  echo = TRUE, cache = TRUE}
+        # First model will use data from first data slicing partition
+        rpartModelFit.01 = train(classe ~ ., 
+                                   data=training.01, 
+                                   method="rpart", 
+                                   preProcess = c("center", "scale", "pca"),
+                                   trControl=trainControl(method="cv"))
+
+        # And second uses from second data partition ("training.02" subset)
+        rpartModelFit.02 = train(classe ~ ., 
+                                   data=training.02, 
+                                   method="rpart", 
+                                   preProcess = c("center", "scale", "pca"),
+                                   trControl=trainControl(method="cv"))
+
+```
+We could further anaylse best variables based on the model(s) that we get.
+  
+### Plotting best.model from tune.rpart function
+Folowing part will calculate best tuning values for rpart function given the data and based on those we can we get summary and we can use "best.model" of the returned object to print model and use that to pick best variables for building an algorithm.
+```{r echo = TRUE, cache = TRUE}
+        #obj1 <- tune.rpart(classe ~ ., data = training.01, minsplit = c(5,10,15))
+        obj.01 =  tune.rpart(classe ~ ., data = training.01,  minsplit = c(5,10,15))
+        summary(obj.01)
+        plotcp(obj.01$best.model) # Plot cross validation
+
+        obj.02 =  tune.rpart(classe ~ ., data = training.02,  minsplit = c(5,10,15))
+        summary(obj.02)
+        plotcp(obj.02$best.model) # Plot cross validation
+
+```
+  
+## Summary
+Based on the precedure above and resulting plots we can choose just a few variables that we estimate are best based on the plotted trees from "best.model" value.
+There are other methods we can use to pick best variable based on anaysis of our model we got back from "train()" fuction.
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
