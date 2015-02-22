@@ -8,8 +8,16 @@ This is a "rough cut" procedure for creating a "machine learning" based predicti
 This algorithm was not used for an actual prediction you should not treat it as a complete work in that regard i.e. **correctly** predicting 20 validation cases at the end. In reality I used "randomForest()" function for predicting and in this example I will use "train()" function from "caret" package with "rpart" method
 
 ## Loding data
+
 Data is provided as part of an assignment and after loading it and some basic pre processing it will be used for making two data partitions that will be used for making a confusion matrix that will be used for comparison of error.
-```{r echo = FALSE, cache = TRUE}
+```{r echo = FALSE, cache = FALSE}
+
+        # First we will figure out which columns we want to keep from the test set
+        require(caret)
+        require(randomForest)
+        require(e1071)
+        require(rpart)
+
         pmlTraining = read.table("pml-training.csv",
                              sep = ",", 
                              header = T
@@ -20,12 +28,9 @@ Data is provided as part of an assignment and after loading it and some basic pr
                              header = T
                              )
 
-        ## For real
-        # First we will figure out which columns we want to keep from the test set
-        require(caret)
-        require(randomForest)
-        require(e1071)
+```
 
+```{r echo = FALSE, cache = FALSE}        
         tmp2 = NULL
         for(i in 1:length(colnames(pmlTesting)) ){ 
                 
@@ -53,7 +58,7 @@ Data is provided as part of an assignment and after loading it and some basic pr
   
 ### Spliting into training and test sets
 This part of R chunk will split the testing and training. Variable "user_name" would be a perfect predictor so it will be used for a split. After that it will be removed.
-```{r  echo = TRUE, cache = TRUE}
+```{r  echo = TRUE, cache = FALSE}
         # Spliting training set into training and test set
         inTrain.01 = createDataPartition(pmlTrainingClean$user_name, p=0.60, list=FALSE)
         
@@ -99,15 +104,22 @@ We could further anaylse best variables based on the model(s) that we get.
   
 ### Plotting best.model from tune.rpart function
 Folowing part will calculate best tuning values for rpart function given the data and based on those we can we get summary and we can use "best.model" of the returned object to print model and use that to pick best variables for building an algorithm.
-```{r echo = TRUE, cache = TRUE}
-        #obj1 <- tune.rpart(classe ~ ., data = training.01, minsplit = c(5,10,15))
+```{r echo = FALSE, cache = TRUE}
+        
         obj.01 =  tune.rpart(classe ~ ., data = training.01,  minsplit = c(5,10,15))
-        summary(obj.01)
-        plotcp(obj.01$best.model) # Plot cross validation
-
+                
         obj.02 =  tune.rpart(classe ~ ., data = training.02,  minsplit = c(5,10,15))
+        
+```
+  
+**Following two plots ilustrate use of Cross-validation via use of function plotcp() and errors related to result of tune.rpart() function for both scenarios of data partitioning.**
+```{r echo =FALSE, fig.path="img/"}
+
+        summary(obj.01)
+        plotcp(obj.01$best.model) # Plot cross validation 1
+
         summary(obj.02)
-        plotcp(obj.02$best.model) # Plot cross validation
+        plotcp(obj.02$best.model) # Plot cross validation 2
 
 ```
   
@@ -115,12 +127,5 @@ Folowing part will calculate best tuning values for rpart function given the dat
 Based on the precedure above and resulting plots we can choose just a few variables that we estimate are best based on the plotted trees from "best.model" value.
 There are other methods we can use to pick best variable based on anaysis of our model we got back from "train()" fuction.
 
-```{r}
-
-```
-
-```{r}
-
-```
 
 
